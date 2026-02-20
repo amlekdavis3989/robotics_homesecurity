@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureShield — Home Security Alarm System</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0c0f;
+    --surface:   #10141a;
+    --card:      #141920;
+    --border:    #1e2730;
+    --red:       #ff2d4a;
+    --red-dim:   rgba(255,45,74,0.15);
+    --amber:     #ffaa00;
+    --green:     #00e676;
+    --blue:      #29b6f6;
+    --text:      #dce8f0;
+    --muted:     #4a6070;
+    --glow-red:  0 0 30px rgba(255,45,74,0.4);
+    --glow-amb:  0 0 20px rgba(255,170,0,0.35);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* noise overlay */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999; opacity: 0.4;
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ====== NAV ====== */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 6%; height: 68px;
+    background: rgba(10,12,15,0.88);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-brand {
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 3px;
+    color: var(--red);
+  }
+
+  .shield-icon {
+    width: 34px; height: 34px;
+    background: var(--red-dim);
+    border: 1.5px solid rgba(255,45,74,0.4);
+    border-radius: 6px 6px 12px 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .nav-links {
+    display: flex; gap: 4px; list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 1.5px;
+    color: var(--muted); text-decoration: none;
+    padding: 8px 16px; border-radius: 4px;
+    transition: all 0.2s; text-transform: uppercase;
+  }
+
+  .nav-links a:hover {
+    color: var(--red);
+    background: var(--red-dim);
+  }
+
+  .nav-status {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 2px;
+    color: var(--green);
+  }
+
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  /* ====== HERO ====== */
+  #hero {
+    min-height: 100vh;
+    display: flex; align-items: center;
+    padding: 100px 6% 60px;
+    position: relative; overflow: hidden;
+  }
+
+  .hero-bg-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,45,74,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,45,74,0.04) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  .hero-glow {
+    position: absolute; top: 20%; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 400px;
+    background: radial-gradient(ellipse, rgba(255,45,74,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    position: relative; z-index: 2;
+    display: grid; grid-template-columns: 1fr 480px;
+    gap: 80px; align-items: center;
+    max-width: 1200px; margin: 0 auto; width: 100%;
+  }
+
+  .hero-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 4px;
+    color: var(--red); text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+    opacity: 0; animation: rise 0.6s 0.1s ease forwards;
+  }
+
+  .hero-label::before {
+    content: ''; width: 24px; height: 1px; background: var(--red);
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 7vw, 88px);
+    line-height: 0.95; letter-spacing: 3px;
+    color: #fff; margin-bottom: 24px;
+    opacity: 0; animation: rise 0.6s 0.2s ease forwards;
+  }
+
+  .hero-title .accent { color: var(--red); text-shadow: var(--glow-red); }
+
+  .hero-desc {
+    font-size: 17px; font-weight: 300; line-height: 1.7;
+    color: var(--muted); max-width: 480px; margin-bottom: 40px;
+    opacity: 0; animation: rise 0.6s 0.3s ease forwards;
+  }
+
+  .hero-ctas {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    opacity: 0; animation: rise 0.6s 0.4s ease forwards;
+  }
+
+  .btn-red {
+    padding: 14px 32px;
+    background: var(--red); color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    border: none; border-radius: 4px; cursor: pointer;
+    text-decoration: none; display: inline-block;
+    transition: all 0.2s; font-weight: 500;
+    box-shadow: 0 4px 20px rgba(255,45,74,0.3);
+  }
+
+  .btn-red:hover { background: #ff1a35; box-shadow: var(--glow-red); transform: translateY(-1px); }
+
+  .btn-ghost {
+    padding: 14px 32px;
+    background: transparent; color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    border: 1px solid var(--border); border-radius: 4px; cursor: pointer;
+    text-decoration: none; display: inline-block; transition: all 0.2s;
+  }
+
+  .btn-ghost:hover { border-color: var(--red); color: var(--red); }
+
+  .hero-metrics {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; margin-top: 48px;
+    opacity: 0; animation: rise 0.6s 0.5s ease forwards;
+  }
+
+  .metric {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px;
+    text-align: center;
+  }
+
+  .metric-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; color: var(--red);
+    text-shadow: var(--glow-red); display: block;
+  }
+
+  .metric-lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--muted); margin-top: 4px; display: block;
+    text-transform: uppercase;
+  }
+
+  /* Hero visual */
+  .hero-visual {
+    opacity: 0; animation: rise 0.8s 0.3s ease forwards;
+    position: relative;
+  }
+
+  .shield-main {
+    width: 100%; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  .shield-ring {
+    position: absolute; border-radius: 50%;
+    border: 1px solid rgba(255,45,74,0.15);
+    animation: spin-slow linear infinite;
+  }
+
+  .shield-ring:nth-child(1) { width: 380px; height: 380px; animation-duration: 40s; }
+  .shield-ring:nth-child(2) { width: 300px; height: 300px; animation-duration: 30s; animation-direction: reverse; border-style: dashed; border-color: rgba(255,45,74,0.1); }
+  .shield-ring:nth-child(3) { width: 220px; height: 220px; animation-duration: 20s; border-color: rgba(255,45,74,0.2); }
+
+  @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .shield-center {
+    width: 150px; height: 150px; position: relative; z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .shield-svg {
+    width: 120px; height: 120px;
+    filter: drop-shadow(0 0 30px rgba(255,45,74,0.6));
+    animation: shield-pulse 3s ease-in-out infinite;
+  }
+
+  @keyframes shield-pulse {
+    0%,100% { filter: drop-shadow(0 0 30px rgba(255,45,74,0.6)); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 50px rgba(255,45,74,0.9)); transform: scale(1.04); }
+  }
+
+  /* floating sensor badges */
+  .sensor-badge {
+    position: absolute; z-index: 3;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px;
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1px; color: var(--muted);
+    animation: float-badge 4s ease-in-out infinite;
+  }
+
+  .sensor-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .sensor-badge:nth-child(5) { top: 12%; right: 0; animation-delay: 0s; }
+  .sensor-badge:nth-child(6) { bottom: 20%; right: -5%; animation-delay: 1.2s; }
+  .sensor-badge:nth-child(7) { top: 30%; left: -5%; animation-delay: 0.7s; }
+  .sensor-badge:nth-child(8) { bottom: 10%; left: 5%; animation-delay: 1.8s; }
+
+  @keyframes float-badge {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ====== SECTIONS BASE ====== */
+  .section {
+    padding: 100px 6%;
+    max-width: 1200px; margin: 0 auto;
+  }
+
+  .section-full { padding: 100px 6%; }
+  .section-full > .section-inner { max-width: 1200px; margin: 0 auto; }
+
+  .sec-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 4px; color: var(--red);
+    text-transform: uppercase; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .sec-tag::before { content: ''; width: 20px; height: 1px; background: var(--red); }
+
+  .sec-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(32px, 4vw, 52px);
+    letter-spacing: 2px; color: #fff; line-height: 1.1;
+    margin-bottom: 48px;
+  }
+
+  .sec-title span { color: var(--red); }
+
+  /* ====== CONCEPT ====== */
+  #concept { background: var(--surface); }
+
+  .concept-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+  }
+
+  .concept-text p {
+    font-size: 17px; font-weight: 300; line-height: 1.8;
+    color: var(--muted); margin-bottom: 20px;
+  }
+
+  .concept-text strong { color: var(--text); font-weight: 500; }
+
+  .concept-highlights {
+    display: flex; flex-direction: column; gap: 14px; margin-top: 32px;
+  }
+
+  .highlight-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 18px;
+    transition: all 0.3s;
+  }
+
+  .highlight-item:hover { border-color: rgba(255,45,74,0.3); box-shadow: var(--glow-red); }
+
+  .hi-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--red-dim); display: flex; align-items: center;
+    justify-content: center; font-size: 16px; flex-shrink: 0;
+  }
+
+  .hi-text strong {
+    display: block; font-size: 14px; font-weight: 600;
+    color: var(--text); margin-bottom: 3px;
+  }
+
+  .hi-text span { font-size: 13px; color: var(--muted); }
+
+  /* Circuit visual */
+  .circuit-wrap {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 32px;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 400px;
+  }
+
+  /* ====== COMPONENTS ====== */
+  .comps-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .comp-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 24px;
+    transition: all 0.3s; position: relative; overflow: hidden;
+  }
+
+  .comp-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--red), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+
+  .comp-card:hover { border-color: rgba(255,45,74,0.3); transform: translateY(-3px); }
+  .comp-card:hover::before { opacity: 1; }
+
+  .comp-icon {
+    width: 52px; height: 52px; border-radius: 10px;
+    background: var(--red-dim); border: 1px solid rgba(255,45,74,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin-bottom: 16px;
+  }
+
+  .comp-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px; font-weight: 600; color: #fff;
+    margin-bottom: 6px;
+  }
+
+  .comp-model {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1.5px; color: var(--red);
+    margin-bottom: 10px;
+  }
+
+  .comp-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  .comp-optional {
+    display: inline-block; margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px;
+    color: var(--amber); background: rgba(255,170,0,0.1);
+    border: 1px solid rgba(255,170,0,0.25);
+    padding: 3px 10px; border-radius: 3px;
+  }
+
+  /* ====== WORKING ====== */
+  #working { background: var(--surface); }
+
+  .working-layout {
+    display: grid; grid-template-columns: 1fr 420px; gap: 60px; align-items: start;
+  }
+
+  .steps { display: flex; flex-direction: column; gap: 0; position: relative; }
+
+  .steps::before {
+    content: '';
+    position: absolute; left: 22px; top: 0; bottom: 0;
+    width: 1px; background: linear-gradient(180deg, var(--red), transparent);
+    opacity: 0.3;
+  }
+
+  .step-item {
+    display: flex; gap: 24px; padding: 0 0 36px;
+    position: relative;
+  }
+
+  .step-num {
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    background: var(--card); border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif; font-size: 18px;
+    color: var(--red); position: relative; z-index: 1;
+    transition: all 0.3s;
+  }
+
+  .step-item:hover .step-num {
+    border-color: var(--red); box-shadow: 0 0 16px rgba(255,45,74,0.4);
+    background: var(--red-dim);
+  }
+
+  .step-body { padding-top: 10px; }
+
+  .step-title {
+    font-size: 17px; font-weight: 600; color: #fff; margin-bottom: 8px;
+  }
+
+  .step-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+  /* Simulator */
+  .simulator {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px; position: sticky; top: 90px;
+  }
+
+  .sim-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 3px; color: var(--muted);
+    text-transform: uppercase; margin-bottom: 24px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--border);
+  }
+
+  .sim-display {
+    background: #000; border: 1px solid #1a1a1a;
+    border-radius: 6px; padding: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; margin-bottom: 20px;
+    min-height: 80px;
+  }
+
+  .lcd-row {
+    color: #00ff41;
+    display: block; letter-spacing: 2px; line-height: 2;
+  }
+
+  .lcd-row.blink { animation: lcd-blink 0.8s step-end infinite; }
+  @keyframes lcd-blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .sim-indicators {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;
+  }
+
+  .indicator {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px; text-align: center;
+  }
+
+  .ind-light {
+    width: 18px; height: 18px; border-radius: 50%;
+    margin: 0 auto 8px;
+    transition: all 0.3s;
+  }
+
+  .ind-light.off { background: #1a1a1a; }
+  .ind-light.led-on { background: var(--red); box-shadow: 0 0 12px var(--red); animation: led-pulse 0.5s ease-in-out infinite alternate; }
+  .ind-light.green-on { background: var(--green); box-shadow: 0 0 12px var(--green); }
+
+  @keyframes led-pulse { from{opacity:0.7} to{opacity:1} }
+
+  .ind-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase;
+  }
+
+  .sim-buttons { display: flex; flex-direction: column; gap: 10px; }
+
+  .sim-btn {
+    padding: 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 1.5px; cursor: pointer;
+    transition: all 0.2s; text-transform: uppercase;
+  }
+
+  .sim-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+  .sim-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
+
+  .buzzer-wave {
+    display: flex; align-items: center; justify-content: center;
+    gap: 3px; height: 30px; margin: 12px 0;
+  }
+
+  .wave-bar {
+    width: 4px; border-radius: 2px; background: var(--red);
+    animation: none;
+  }
+
+  .wave-bar.active { animation: wave 0.4s ease-in-out infinite alternate; }
+  .wave-bar:nth-child(1) { height: 8px; animation-delay: 0s; }
+  .wave-bar:nth-child(2) { height: 16px; animation-delay: 0.05s; }
+  .wave-bar:nth-child(3) { height: 24px; animation-delay: 0.1s; }
+  .wave-bar:nth-child(4) { height: 18px; animation-delay: 0.15s; }
+  .wave-bar:nth-child(5) { height: 28px; animation-delay: 0.2s; }
+  .wave-bar:nth-child(6) { height: 14px; animation-delay: 0.25s; }
+  .wave-bar:nth-child(7) { height: 22px; animation-delay: 0.3s; }
+
+  @keyframes wave { from{transform:scaleY(0.3)} to{transform:scaleY(1)} }
+
+  /* ====== ENHANCEMENTS ====== */
+  .enh-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  .enh-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; transition: all 0.3s;
+  }
+
+  .enh-card:hover { border-color: rgba(255,45,74,0.35); transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+
+  .enh-header {
+    padding: 24px 24px 20px;
+    display: flex; align-items: center; gap: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .enh-icon-wrap {
+    width: 48px; height: 48px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+
+  .enh-title {
+    font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 3px;
+  }
+
+  .enh-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px;
+    padding: 2px 8px; border-radius: 3px;
+    display: inline-block;
+  }
+
+  .enh-body { padding: 20px 24px; }
+  .enh-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+  .enh-features { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+  .enh-feat {
+    font-size: 13px; color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .enh-feat::before { content: '→'; color: var(--red); font-size: 12px; }
+
+  /* ====== CODE SECTION ====== */
+  #code { background: var(--surface); }
+
+  .code-block {
+    background: #000; border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+
+  .code-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; background: var(--card);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .code-dots { display: flex; gap: 6px; }
+  .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .code-dot:nth-child(1) { background: #ff5f57; }
+  .code-dot:nth-child(2) { background: #febc2e; }
+  .code-dot:nth-child(3) { background: #28c840; }
+
+  .code-lang {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 2px; color: var(--muted);
+  }
+
+  pre {
+    padding: 28px 24px; overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; line-height: 1.8;
+  }
+
+  .kw { color: #ff79c6; }
+  .fn { color: #50fa7b; }
+  .num { color: #bd93f9; }
+  .str { color: #f1fa8c; }
+  .cm { color: #6272a4; font-style: italic; }
+  .var-c { color: #8be9fd; }
+  .def { color: var(--amber); }
+
+  /* ====== FOOTER ====== */
+  footer {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 60px 6% 32px;
+  }
+
+  .footer-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 60px;
+    margin-bottom: 48px;
+  }
+
+  .footer-brand .brand-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px; letter-spacing: 3px; color: var(--red);
+    margin-bottom: 12px; display: block;
+  }
+
+  .footer-brand p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+  .footer-col-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 3px; color: var(--muted);
+    text-transform: uppercase; margin-bottom: 20px;
+  }
+
+  .footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .footer-links a {
+    font-size: 14px; color: var(--muted); text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--red); }
+
+  .footer-bottom {
+    max-width: 1200px; margin: 0 auto;
+    border-top: 1px solid var(--border); padding-top: 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1.5px; color: var(--muted);
+  }
+
+  /* ====== RESPONSIVE ====== */
+  @media (max-width: 900px) {
+    .hero-inner { grid-template-columns: 1fr; }
+    .hero-visual { display: none; }
+    .concept-grid, .working-layout { grid-template-columns: 1fr; }
+    .footer-inner { grid-template-columns: 1fr; gap: 32px; }
+    nav .nav-links { display: none; }
+  }
+
+  /* scroll reveal */
+  .reveal {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="shield-icon">🛡</div>
+    SECURESHIELD
+  </div>
+  <ul class="nav-links">
+    <li><a href="#concept">Concept</a></li>
+    <li><a href="#components">Components</a></li>
+    <li><a href="#working">Working</a></li>
+    <li><a href="#enhancements">Enhancements</a></li>
+    <li><a href="#code">Code</a></li>
+  </ul>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    SYSTEM ARMED
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg-grid"></div>
+  <div class="hero-glow"></div>
+
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-label">Arduino Uno Project · 2026</div>
+      <h1 class="hero-title">HOME<br>SECURITY<br><span class="accent">ALARM</span><br>SYSTEM</h1>
+      <p class="hero-desc">A smart motion-detection alarm system using PIR sensors, buzzers, and LED alerts — built on Arduino Uno with optional GSM SMS notifications.</p>
+      <div class="hero-ctas">
+        <a href="#working" class="btn-red">How It Works</a>
+        <a href="#code" class="btn-ghost">View Code</a>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric">
+          <span class="metric-val">PIR</span>
+          <span class="metric-lbl">Sensor Type</span>
+        </div>
+        <div class="metric">
+          <span class="metric-val">7M</span>
+          <span class="metric-lbl">Detection Range</span>
+        </div>
+        <div class="metric">
+          <span class="metric-val">5V</span>
+          <span class="metric-lbl">Operating Voltage</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="shield-main">
+        <div class="shield-ring"></div>
+        <div class="shield-ring"></div>
+        <div class="shield-ring"></div>
+
+        <div class="shield-center">
+          <svg class="shield-svg" viewBox="0 0 100 120" fill="none">
+            <path d="M50 5 L90 20 L90 55 C90 80 70 100 50 112 C30 100 10 80 10 55 L10 20 Z"
+              fill="rgba(255,45,74,0.12)" stroke="#ff2d4a" stroke-width="2"/>
+            <path d="M50 18 L80 30 L80 55 C80 73 65 90 50 100 C35 90 20 73 20 55 L20 30 Z"
+              fill="rgba(255,45,74,0.08)" stroke="rgba(255,45,74,0.4)" stroke-width="1"/>
+            <!-- Lock icon -->
+            <rect x="35" y="55" width="30" height="22" rx="3" fill="#ff2d4a" opacity="0.9"/>
+            <path d="M42 55 L42 48 C42 43 58 43 58 48 L58 55" stroke="#ff2d4a" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <circle cx="50" cy="65" r="4" fill="#000" opacity="0.5"/>
+            <!-- Tick marks -->
+            <line x1="25" y1="40" x2="30" y2="40" stroke="rgba(255,45,74,0.5)" stroke-width="1"/>
+            <line x1="70" y1="40" x2="75" y2="40" stroke="rgba(255,45,74,0.5)" stroke-width="1"/>
+          </svg>
+        </div>
+
+        <!-- Sensor badges -->
+        <div class="sensor-badge" style="top:8%;right:-10%">
+          <div class="dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>
+          PIR Active
+        </div>
+        <div class="sensor-badge" style="bottom:22%;right:-12%">
+          <div class="dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div>
+          Buzzer Ready
+        </div>
+        <div class="sensor-badge" style="top:28%;left:-14%">
+          <div class="dot" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></div>
+          GSM Online
+        </div>
+        <div class="sensor-badge" style="bottom:8%;left:2%">
+          <div class="dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div>
+          LCD Ready
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONCEPT -->
+<div id="concept" class="section-full" style="background:var(--surface)">
+  <div class="section-inner section">
+    <div class="reveal">
+      <div class="sec-tag">01 / Overview</div>
+      <h2 class="sec-title">THE <span>CONCEPT</span></h2>
+    </div>
+    <div class="concept-grid">
+      <div class="concept-text reveal">
+        <p>The <strong>Home Security Alarm System</strong> is designed to detect unauthorized movement in a room or protected area using passive infrared (PIR) technology. When an intruder enters the detection zone, the system instantly triggers both an audible alarm and a visual LED alert.</p>
+        <p>Built on the <strong>Arduino Uno microcontroller</strong>, this project demonstrates real-world security automation — from basic motion sensing all the way to GSM-based SMS alerts and keypad-controlled arming/disarming.</p>
+        <div class="concept-highlights">
+          <div class="highlight-item">
+            <div class="hi-icon">🔴</div>
+            <div class="hi-text">
+              <strong>Instant Detection</strong>
+              <span>PIR sensor detects infrared heat from human movement within 7 meters</span>
+            </div>
+          </div>
+          <div class="highlight-item">
+            <div class="hi-icon">🔔</div>
+            <div class="hi-text">
+              <strong>Multi-Alert System</strong>
+              <span>Simultaneous buzzer alarm + LED flash for immediate occupant notification</span>
+            </div>
+          </div>
+          <div class="highlight-item">
+            <div class="hi-icon">📱</div>
+            <div class="hi-text">
+              <strong>Remote Notification</strong>
+              <span>Optional GSM module sends real-time SMS alerts to the owner's phone</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="circuit-wrap reveal">
+        <svg viewBox="0 0 340 300" fill="none" width="100%">
+          <!-- Arduino board -->
+          <rect x="100" y="100" width="140" height="90" rx="4" fill="#1a2a1a" stroke="#2a5a2a" stroke-width="2"/>
+          <rect x="106" y="106" width="128" height="78" rx="2" fill="#0d1f0d" opacity="0.8"/>
+          <text x="170" y="150" text-anchor="middle" fill="#50fa7b" font-family="JetBrains Mono" font-size="11" letter-spacing="1">ARDUINO</text>
+          <text x="170" y="164" text-anchor="middle" fill="#2a5a2a" font-family="JetBrains Mono" font-size="8">UNO</text>
+          <!-- Pin headers -->
+          <rect x="98" y="115" width="6" height="60" fill="#3a3a2a" stroke="#5a5a3a" stroke-width="0.5"/>
+          <rect x="236" y="115" width="6" height="60" fill="#3a3a2a" stroke="#5a5a3a" stroke-width="0.5"/>
+
+          <!-- PIR Sensor -->
+          <rect x="18" y="60" width="54" height="44" rx="4" fill="#1a1a2a" stroke="#00b4ff" stroke-width="1.5"/>
+          <circle cx="45" cy="82" r="14" fill="none" stroke="#00b4ff" stroke-width="1" stroke-dasharray="3 3"/>
+          <circle cx="45" cy="82" r="7" fill="rgba(0,180,255,0.2)"/>
+          <text x="45" y="116" text-anchor="middle" fill="#00b4ff" font-family="JetBrains Mono" font-size="7">PIR</text>
+          <!-- Wire: PIR → Arduino -->
+          <path d="M72 82 Q90 82 98 130" stroke="#00b4ff" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
+
+          <!-- Buzzer -->
+          <rect x="18" y="178" width="54" height="44" rx="4" fill="#1a1010" stroke="#ff2d4a" stroke-width="1.5"/>
+          <circle cx="45" cy="200" r="14" fill="none" stroke="#ff2d4a" stroke-width="1"/>
+          <circle cx="45" cy="200" r="6" fill="rgba(255,45,74,0.25)"/>
+          <text x="45" y="234" text-anchor="middle" fill="#ff2d4a" font-family="JetBrains Mono" font-size="7">BUZZER</text>
+          <!-- Wire: Arduino → Buzzer -->
+          <path d="M98 160 Q90 160 72 200" stroke="#ff2d4a" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
+
+          <!-- LED -->
+          <circle cx="295" cy="82" r="18" fill="none" stroke="#ffaa00" stroke-width="1.5"/>
+          <circle cx="295" cy="82" r="8" fill="rgba(255,170,0,0.2)"/>
+          <line x1="295" y1="64" x2="295" y2="56" stroke="#ffaa00" stroke-width="1.5"/>
+          <line x1="295" y1="100" x2="295" y2="108" stroke="#ffaa00" stroke-width="1.5"/>
+          <text x="295" y="122" text-anchor="middle" fill="#ffaa00" font-family="JetBrains Mono" font-size="7">LED</text>
+          <!-- Wire: Arduino → LED -->
+          <path d="M242 130 Q268 130 277 82" stroke="#ffaa00" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
+
+          <!-- LCD (optional) -->
+          <rect x="258" y="178" width="64" height="36" rx="3" fill="#0a1a0a" stroke="#2a4a2a" stroke-width="1.2"/>
+          <rect x="262" y="182" width="56" height="12" fill="#001400" rx="1"/>
+          <rect x="262" y="198" width="56" height="12" fill="#001400" rx="1"/>
+          <text x="265" y="192" fill="#00ff41" font-family="JetBrains Mono" font-size="5">SYSTEM ARMED</text>
+          <text x="265" y="208" fill="#00ff41" font-family="JetBrains Mono" font-size="5">MONITORING...</text>
+          <text x="290" y="226" text-anchor="middle" fill="#2a4a2a" font-family="JetBrains Mono" font-size="6">16x2 LCD</text>
+          <!-- Wire: Arduino → LCD -->
+          <path d="M242 170 Q250 170 258 196" stroke="#2a4a2a" stroke-width="1.2" stroke-dasharray="3 4" fill="none"/>
+
+          <!-- Power rails -->
+          <line x1="170" y1="190" x2="170" y2="215" stroke="#ff4444" stroke-width="1" opacity="0.5"/>
+          <line x1="175" y1="190" x2="175" y2="215" stroke="#333" stroke-width="1" opacity="0.5"/>
+          <text x="170" y="228" text-anchor="middle" fill="#333" font-family="JetBrains Mono" font-size="6">5V / GND</text>
+
+          <!-- Labels -->
+          <text x="45" y="52" text-anchor="middle" fill="rgba(0,180,255,0.5)" font-family="JetBrains Mono" font-size="7">D2 →</text>
+          <text x="45" y="172" text-anchor="middle" fill="rgba(255,45,74,0.5)" font-family="JetBrains Mono" font-size="7">← D8</text>
+          <text x="295" y="50" text-anchor="middle" fill="rgba(255,170,0,0.5)" font-family="JetBrains Mono" font-size="7">D13 →</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMPONENTS -->
+<div id="components" class="section">
+  <div class="reveal">
+    <div class="sec-tag">02 / Hardware</div>
+    <h2 class="sec-title">REQUIRED <span>COMPONENTS</span></h2>
+  </div>
+  <div class="comps-grid">
+    <div class="comp-card reveal">
+      <div class="comp-icon">🔲</div>
+      <div class="comp-name">Arduino Uno</div>
+      <div class="comp-model">ATmega328P</div>
+      <div class="comp-desc">The main microcontroller that processes all sensor inputs and controls outputs. 14 digital I/O pins, 6 analog inputs, 16MHz clock.</div>
+    </div>
+    <div class="comp-card reveal">
+      <div class="comp-icon">👁️</div>
+      <div class="comp-name">PIR Motion Sensor</div>
+      <div class="comp-model">HC-SR501</div>
+      <div class="comp-desc">Passive Infrared sensor that detects body heat movement. Adjustable sensitivity (3–7m range) and time delay via onboard potentiometers.</div>
+    </div>
+    <div class="comp-card reveal">
+      <div class="comp-icon">🔔</div>
+      <div class="comp-name">Active Buzzer</div>
+      <div class="comp-model">5V Active Buzzer</div>
+      <div class="comp-desc">Produces a continuous alarm tone when triggered. Active type means it only requires a HIGH signal — no PWM programming needed.</div>
+    </div>
+    <div class="comp-card reveal">
+      <div class="comp-icon">💡</div>
+      <div class="comp-name">LED (Red)</div>
+      <div class="comp-model">5mm Standard LED</div>
+      <div class="comp-desc">Visual alert indicator that flashes when motion is detected. Paired with a 220Ω current-limiting resistor to prevent damage.</div>
+    </div>
+    <div class="comp-card reveal">
+      <div class="comp-icon">⬛</div>
+      <div class="comp-name">LCD Display</div>
+      <div class="comp-model">16×2 Character LCD</div>
+      <div class="comp-desc">Displays system status messages like "System Armed" or "INTRUDER DETECTED!" for clear visual feedback to the user.</div>
+      <span class="comp-optional">Optional</span>
+    </div>
+    <div class="comp-card reveal">
+      <div class="comp-icon">📡</div>
+      <div class="comp-name">GSM Module</div>
+      <div class="comp-model">SIM800L</div>
+      <div class="comp-desc">Sends automatic SMS alerts to the homeowner's phone when an intrusion is detected. Supports GPRS for IoT integration.</div>
+      <span class="comp-optional">Optional</span>
+    </div>
+  </div>
+</div>
+
+<!-- WORKING -->
+<div id="working" class="section-full" style="background:var(--surface)">
+  <div class="section-inner section">
+    <div class="reveal">
+      <div class="sec-tag">03 / How It Works</div>
+      <h2 class="sec-title">WORKING <span>PRINCIPLE</span></h2>
+    </div>
+    <div class="working-layout">
+      <div class="steps reveal">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">PIR Sensor Monitors Continuously</div>
+            <div class="step-desc">The HC-SR501 PIR sensor constantly scans the protected area for changes in infrared radiation — the heat signature produced by human bodies. It operates in idle state, consuming minimal power.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Motion Detected — HIGH Signal Sent</div>
+            <div class="step-desc">When the sensor detects movement within its range, it sends a HIGH (5V) digital signal to Pin 2 of the Arduino. This transition from LOW to HIGH triggers the alarm sequence.</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Arduino Triggers Alarm & LED</div>
+            <div class="step-desc">The Arduino reads the PIR signal, then simultaneously sets Pin 8 HIGH (buzzer — alarm sounds) and Pin 13 HIGH (LED — flashes red). The LCD updates to show "INTRUDER DETECTED!"</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Optional: SMS Alert via GSM</div>
+            <div class="step-desc">If the SIM800L module is connected, the Arduino sends an AT command to dispatch an instant SMS to the registered number — "⚠ INTRUDER DETECTED at HOME!"</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <div class="step-title">System Returns to Idle</div>
+            <div class="step-desc">When the PIR signal goes LOW (no motion detected), the Arduino deactivates the buzzer and LED and updates the display back to "System Armed — Monitoring". Ready for next detection.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Simulator -->
+      <div class="simulator reveal">
+        <div class="sim-title">// Live Simulator</div>
+
+        <div class="sim-display">
+          <span class="lcd-row" id="lcd1">SYSTEM ARMED    </span>
+          <span class="lcd-row" id="lcd2">MONITORING...   </span>
+        </div>
+
+        <div class="sim-indicators">
+          <div class="indicator">
+            <div class="ind-light green-on" id="pir-led"></div>
+            <div class="ind-label">PIR Sensor</div>
+          </div>
+          <div class="indicator">
+            <div class="ind-light off" id="alarm-led"></div>
+            <div class="ind-label">Alarm LED</div>
+          </div>
+        </div>
+
+        <div class="buzzer-wave" id="buzzer-wave">
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+        </div>
+
+        <div class="sim-buttons">
+          <button class="sim-btn" onclick="triggerAlarm()">⚡ SIMULATE MOTION DETECTED</button>
+          <button class="sim-btn" onclick="resetSystem()">✓ RESET / DISARM</button>
+        </div>
+
+        <div style="margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1.5px;text-align:center;padding-top:14px;border-top:1px solid var(--border)">
+          SERIAL MONITOR OUTPUT
+        </div>
+        <div id="serial-log" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);margin-top:8px;max-height:80px;overflow-y:auto;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ENHANCEMENTS -->
+<div id="enhancements" class="section">
+  <div class="reveal">
+    <div class="sec-tag">04 / Upgrades</div>
+    <h2 class="sec-title">ENHANCEMENTS &amp; <span>FEATURES</span></h2>
+  </div>
+  <div class="enh-grid">
+    <div class="enh-card reveal">
+      <div class="enh-header">
+        <div class="enh-icon-wrap" style="background:rgba(255,45,74,0.12);border:1px solid rgba(255,45,74,0.2)">📱</div>
+        <div>
+          <div class="enh-title">SMS Alert via GSM</div>
+          <span class="enh-badge" style="background:rgba(255,45,74,0.1);border:1px solid rgba(255,45,74,0.2);color:var(--red)">SIM800L</span>
+        </div>
+      </div>
+      <div class="enh-body">
+        <div class="enh-desc">Automatically sends an SMS to the owner's registered phone number the moment an intrusion is detected, even when away from home.</div>
+        <div class="enh-features">
+          <div class="enh-feat">Real-time SMS delivery</div>
+          <div class="enh-feat">Multiple recipient numbers</div>
+          <div class="enh-feat">Timestamp in message</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="enh-card reveal">
+      <div class="enh-header">
+        <div class="enh-icon-wrap" style="background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.2)">⌨️</div>
+        <div>
+          <div class="enh-title">Password Keypad</div>
+          <span class="enh-badge" style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);color:var(--green)">4×4 MATRIX</span>
+        </div>
+      </div>
+      <div class="enh-body">
+        <div class="enh-desc">Arm or disarm the security system using a 4-digit PIN entered on a matrix keypad, preventing false alarms when returning home.</div>
+        <div class="enh-features">
+          <div class="enh-feat">Custom PIN programming</div>
+          <div class="enh-feat">Wrong-attempt lockout</div>
+          <div class="enh-feat">Master override code</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="enh-card reveal">
+      <div class="enh-header">
+        <div class="enh-icon-wrap" style="background:rgba(41,182,246,0.1);border:1px solid rgba(41,182,246,0.2)">📷</div>
+        <div>
+          <div class="enh-title">Camera Integration</div>
+          <span class="enh-badge" style="background:rgba(41,182,246,0.08);border:1px solid rgba(41,182,246,0.2);color:var(--blue)">ESP32-CAM</span>
+        </div>
+      </div>
+      <div class="enh-body">
+        <div class="enh-desc">Captures a photo of the intruder at the moment of detection and emails or uploads it to cloud storage for evidence.</div>
+        <div class="enh-features">
+          <div class="enh-feat">Auto snapshot on trigger</div>
+          <div class="enh-feat">Email / Telegram delivery</div>
+          <div class="enh-feat">SD card local storage</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="enh-card reveal">
+      <div class="enh-header">
+        <div class="enh-icon-wrap" style="background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.2)">🌐</div>
+        <div>
+          <div class="enh-title">IoT Web Dashboard</div>
+          <span class="enh-badge" style="background:rgba(255,170,0,0.08);border:1px solid rgba(255,170,0,0.2);color:var(--amber)">ESP8266 / WIFI</span>
+        </div>
+      </div>
+      <div class="enh-body">
+        <div class="enh-desc">Monitor your home security in real-time from any browser using a Wi-Fi enabled ESP8266 module connected to a web dashboard.</div>
+        <div class="enh-features">
+          <div class="enh-feat">Live sensor status</div>
+          <div class="enh-feat">Remote arm/disarm</div>
+          <div class="enh-feat">Alert history log</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CODE -->
+<div id="code" class="section-full" style="background:var(--surface)">
+  <div class="section-inner section">
+    <div class="reveal">
+      <div class="sec-tag">05 / Source Code</div>
+      <h2 class="sec-title">ARDUINO <span>CODE</span></h2>
+    </div>
+    <div class="code-block reveal">
+      <div class="code-header">
+        <div class="code-dots">
+          <div class="code-dot"></div>
+          <div class="code-dot"></div>
+          <div class="code-dot"></div>
+        </div>
+        <div class="code-lang">HOME_SECURITY.INO — ARDUINO C++</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted)">v1.0</div>
+      </div>
+      <pre><code><span class="cm">// ============================================
+// Home Security Alarm System — Arduino Uno
+// Components: PIR Sensor, Buzzer, LED, LCD
+// ============================================</span>
+
+<span class="kw">#include</span> <span class="str">&lt;LiquidCrystal.h&gt;</span>
+
+<span class="cm">// Pin Definitions</span>
+<span class="kw">const int</span> <span class="var-c">PIR_PIN</span>    = <span class="num">2</span>;   <span class="cm">// PIR sensor output</span>
+<span class="kw">const int</span> <span class="var-c">BUZZER_PIN</span> = <span class="num">8</span>;   <span class="cm">// Active buzzer</span>
+<span class="kw">const int</span> <span class="var-c">LED_PIN</span>    = <span class="num">13</span>;  <span class="cm">// Alarm LED</span>
+
+<span class="cm">// LCD: RS, E, D4, D5, D6, D7</span>
+<span class="def">LiquidCrystal</span> <span class="fn">lcd</span>(<span class="num">7</span>, <span class="num">6</span>, <span class="num">5</span>, <span class="num">4</span>, <span class="num">3</span>, <span class="num">9</span>);
+
+<span class="kw">bool</span> <span class="var-c">alarmActive</span> = <span class="kw">false</span>;
+
+<span class="kw">void</span> <span class="fn">setup</span>() {
+  <span class="fn">pinMode</span>(<span class="var-c">PIR_PIN</span>, INPUT);
+  <span class="fn">pinMode</span>(<span class="var-c">BUZZER_PIN</span>, OUTPUT);
+  <span class="fn">pinMode</span>(<span class="var-c">LED_PIN</span>, OUTPUT);
+
+  <span class="fn">Serial.begin</span>(<span class="num">9600</span>);
+  lcd.<span class="fn">begin</span>(<span class="num">16</span>, <span class="num">2</span>);
+
+  <span class="cm">// Startup display</span>
+  lcd.<span class="fn">setCursor</span>(<span class="num">0</span>, <span class="num">0</span>);
+  lcd.<span class="fn">print</span>(<span class="str">"SYSTEM ARMED"</span>);
+  lcd.<span class="fn">setCursor</span>(<span class="num">0</span>, <span class="num">1</span>);
+  lcd.<span class="fn">print</span>(<span class="str">"MONITORING..."</span>);
+
+  <span class="fn">Serial.println</span>(<span class="str">"[INFO] Security system initialized."</span>);
+}
+
+<span class="kw">void</span> <span class="fn">loop</span>() {
+  <span class="kw">int</span> <span class="var-c">motionState</span> = <span class="fn">digitalRead</span>(<span class="var-c">PIR_PIN</span>);
+
+  <span class="kw">if</span> (<span class="var-c">motionState</span> == HIGH) {
+    <span class="fn">triggerAlarm</span>();
+  } <span class="kw">else</span> {
+    <span class="fn">resetAlarm</span>();
+  }
+
+  <span class="fn">delay</span>(<span class="num">200</span>);
+}
+
+<span class="kw">void</span> <span class="fn">triggerAlarm</span>() {
+  <span class="kw">if</span> (!<span class="var-c">alarmActive</span>) {
+    <span class="var-c">alarmActive</span> = <span class="kw">true</span>;
+    <span class="fn">Serial.println</span>(<span class="str">"[ALERT] INTRUDER DETECTED!"</span>);
+
+    lcd.<span class="fn">clear</span>();
+    lcd.<span class="fn">setCursor</span>(<span class="num">0</span>, <span class="num">0</span>);
+    lcd.<span class="fn">print</span>(<span class="str">"!! INTRUDER !!"</span>);
+    lcd.<span class="fn">setCursor</span>(<span class="num">0</span>, <span class="num">1</span>);
+    lcd.<span class="fn">print</span>(<span class="str">"ALARM ACTIVE"</span>);
+  }
+
+  <span class="fn">digitalWrite</span>(<span class="var-c">BUZZER_PIN</span>, HIGH);
+  <span class="fn">digitalWrite</span>(<span class="var-c">LED_PIN</span>, HIGH);
+  <span class="fn">delay</span>(<span class="num">300</span>);
+  <span class="fn">digitalWrite</span>(<span class="var-c">LED_PIN</span>, LOW);  <span class="cm">// Flash LED</span>
+  <span class="fn">delay</span>(<span class="num">200</span>);
+}
+
+<span class="kw">void</span> <span class="fn">resetAlarm</span>() {
+  <span class="kw">if</span> (<span class="var-c">alarmActive</span>) {
+    <span class="var-c">alarmActive</span> = <span class="kw">false</span>;
+    <span class="fn">Serial.println</span>(<span class="str">"[INFO] All clear. System reset."</span>);
+
+    lcd.<span class="fn">clear</span>();
+    lcd.<span class="fn">setCursor</span>(<span class="num">0</span>, <span class="num">0</span>);
+    lcd.<span class="fn">print</span>(<span class="str">"SYSTEM ARMED"</span>);
+    lcd.<span class="fn">setCursor</span>(<span class="num">0</span>, <span class="num">1</span>);
+    lcd.<span class="fn">print</span>(<span class="str">"MONITORING..."</span>);
+  }
+
+  <span class="fn">digitalWrite</span>(<span class="var-c">BUZZER_PIN</span>, LOW);
+  <span class="fn">digitalWrite</span>(<span class="var-c">LED_PIN</span>, LOW);
+}</code></pre>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="brand-name">SECURESHIELD</span>
+      <p>A home security alarm system project demonstrating motion detection, embedded systems programming, and IoT integration using Arduino Uno.</p>
+    </div>
+    <div>
+      <div class="footer-col-title">Navigation</div>
+      <ul class="footer-links">
+        <li><a href="#concept">Concept</a></li>
+        <li><a href="#components">Components</a></li>
+        <li><a href="#working">Working Principle</a></li>
+        <li><a href="#enhancements">Enhancements</a></li>
+        <li><a href="#code">Source Code</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Project Info</div>
+      <ul class="footer-links">
+        <li><a href="#">Arduino Uno Platform</a></li>
+        <li><a href="#">PIR HC-SR501 Datasheet</a></li>
+        <li><a href="#">SIM800L GSM Guide</a></li>
+        <li><a href="#">Circuit Schematic</a></li>
+        <li><a href="#">Project Report</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 SECURESHIELD // ARDUINO PROJECT SHOWCASE</span>
+    <span>HOME SECURITY ALARM SYSTEM</span>
+  </div>
+</footer>
+
+<script>
+  // ===== SIMULATOR =====
+  let alarmOn = false;
+  const log = document.getElementById('serial-log');
+
+  function addSerial(msg, color = '#00e676') {
+    const line = document.createElement('div');
+    line.style.cssText = `color:${color};margin-bottom:2px;`;
+    const t = new Date();
+    const ts = [t.getHours(), t.getMinutes(), t.getSeconds()].map(n => String(n).padStart(2,'0')).join(':');
+    line.textContent = `[${ts}] ${msg}`;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function triggerAlarm() {
+    if (alarmOn) return;
+    alarmOn = true;
+
+    // LCD
+    document.getElementById('lcd1').textContent = '!! INTRUDER !!  ';
+    document.getElementById('lcd1').classList.add('blink');
+    document.getElementById('lcd2').textContent = 'ALARM ACTIVE    ';
+    document.getElementById('lcd2').classList.add('blink');
+
+    // LED
+    document.getElementById('alarm-led').className = 'ind-light led-on';
+
+    // Buzzer wave
+    document.querySelectorAll('.wave-bar').forEach(b => b.classList.add('active'));
+
+    // Serial
+    addSerial('[ALERT] Motion detected on Pin 2!', '#ff2d4a');
+    addSerial('[ALERT] INTRUDER DETECTED!', '#ff2d4a');
+    addSerial('[ACTION] Buzzer ON — Pin 8 HIGH', '#ffaa00');
+    addSerial('[ACTION] LED ON — Pin 13 HIGH', '#ffaa00');
+  }
+
+  function resetSystem() {
+    alarmOn = false;
+
+    document.getElementById('lcd1').textContent = 'SYSTEM ARMED    ';
+    document.getElementById('lcd1').classList.remove('blink');
+    document.getElementById('lcd2').textContent = 'MONITORING...   ';
+    document.getElementById('lcd2').classList.remove('blink');
+
+    document.getElementById('alarm-led').className = 'ind-light off';
+    document.querySelectorAll('.wave-bar').forEach(b => b.classList.remove('active'));
+
+    addSerial('[INFO] PIR signal LOW — all clear', '#00e676');
+    addSerial('[INFO] Buzzer OFF, LED OFF', '#4a6070');
+    addSerial('[INFO] System reset. Monitoring...', '#00e676');
+  }
+
+  // Init log
+  addSerial('[INFO] Security system initialized.', '#4a6070');
+  addSerial('[INFO] PIR sensor armed — monitoring...', '#00e676');
+
+  // ===== SCROLL REVEAL =====
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), e.target.dataset.delay || 0);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.reveal').forEach((el, i) => {
+    el.dataset.delay = (i % 5) * 80;
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>
